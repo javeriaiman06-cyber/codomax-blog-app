@@ -1,33 +1,67 @@
-# Blog Application
+# Codomax Blog Application
 
 ## About the Project
 
-This project is a simple Blog Application developed as part of my Codomax internship. It provides a basic interface for creating and viewing blog posts.
+A simple blog application backend developed as part of the Codomax internship, using Node.js and Express.js.
 
 ## Features
 
-* Create and publish blog posts.
-* View blog content in a simple interface.
-* Responsive and user-friendly design.
-* HTML, CSS, and JavaScript implementation.
+* User registration
+* User login
+* Create blog posts
+* Retrieve all blog posts
+* JSON-based API responses
+* CORS support
 
 ## Technologies Used
 
-* HTML5
-* CSS3
+* Node.js
+* Express.js
 * JavaScript
+* HTML and CSS
+
+## Project Structure
+
+* `server.js` — Backend server and API routes
+* `package.json` — Project configuration and dependencies
+* `package-lock.json` — Dependency lock file
+* `index.html` — Frontend page
+* `style.css` — Frontend styling
+* `script.js` — Frontend functionality
 
 ## How to Run
 
-1. Clone or download this repository.
-2. Open the project folder.
-3. Open `index.html` in your web browser.
+1. Install Node.js.
 
-## Project Files
+2. Download or clone this repository.
 
-* `index.html` — Application structure.
-* `style.css` — Styling and layout.
-* `script.js` — Application functionality.
+3. Open a terminal in the project folder.
+
+4. Install dependencies:
+
+   `npm install`
+
+5. Start the server:
+
+   `npm start`
+
+6. Open `http://localhost:3000` in your browser.
+
+The home route should return a message confirming that the Codomax Blog API is running.
+
+## API Endpoints
+
+| Method | Endpoint        | Purpose                 |
+| ------ | --------------- | ----------------------- |
+| GET    | `/`             | Check server status     |
+| POST   | `/api/register` | Register a user         |
+| POST   | `/api/login`    | Log in a user           |
+| POST   | `/api/blogs`    | Create a blog post      |
+| GET    | `/api/blogs`    | Retrieve all blog posts |
+
+## Notes
+
+This project currently uses temporary in-memory storage. User accounts and blog posts are reset when the server restarts. Password hashing and persistent database storage are not implemented yet.
 
 ## Author
 
