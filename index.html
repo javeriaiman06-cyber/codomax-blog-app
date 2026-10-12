@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="InkSpace is a place to read, write, and share stories.">
+  <title>InkSpace | Blog Application</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="navbar">
+    <a href="#" class="brand" data-page="home">InkSpace<span>.</span></a>
+    <nav aria-label="Main navigation">
+      <a href="#" data-page="home">Home</a>
+      <a href="#" data-page="dashboard">Dashboard</a>
+      <a href="#" data-page="create">Write a Blog</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="#" class="btn btn-light" data-page="login" id="loginLink">Login</a>
+      <a href="#" class="btn btn-primary" data-page="register" id="registerLink">Get Started</a>
+      <button class="btn btn-light hidden" id="logoutBtn" type="button">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="home" class="page">
+      <div class="hero">
+        <span class="eyebrow">WELCOME TO INKSPACE</span>
+        <h1>Ideas deserve<br>to be <span>shared.</span></h1>
+        <p>Discover fresh perspectives, explore inspiring stories, and share your own ideas with the world.</p>
+        <a href="#" class="btn btn-primary" data-page="create">Start Writing →</a>
+      </div>
+      <div class="section-heading">
+        <div><span class="eyebrow">THE LATEST STORIES</span><h2>Explore the blog</h2></div>
+        <input id="searchInput" type="search" placeholder="Search articles..." aria-label="Search articles">
+      </div>
+      <div id="blogGrid" class="blog-grid"></div>
+      <p id="emptyMessage" class="empty hidden">No stories found. Try another search or write the first blog!</p>
+    </section>
+
+    <section id="login" class="page hidden">
+      <div class="form-card">
+        <span class="eyebrow">WELCOME BACK</span><h1>Login to InkSpace</h1>
+        <p>Sign in to manage your stories.</p>
+        <form id="loginForm">
+          <label for="loginEmail">Email address</label><input id="loginEmail" type="email" placeholder="you@example.com" required>
+          <label for="loginPassword">Password</label><input id="loginPassword" type="password" placeholder="Enter your password" required>
+          <button class="btn btn-primary full-width" type="submit">Login</button>
+        </form>
+        <p class="form-footer">New here? <a href="#" data-page="register">Create an account</a></p>
+        <p class="note">Demo only: this is not secure authentication.</p>
+      </div>
+    </section>
+
+    <section id="register" class="page hidden">
+      <div class="form-card">
+        <span class="eyebrow">JOIN OUR COMMUNITY</span><h1>Create your account</h1>
+        <p>Start sharing your ideas with InkSpace.</p>
+        <form id="registerForm">
+          <label for="registerName">Full name</label><input id="registerName" type="text" placeholder="Your name" required minlength="2">
+          <label for="registerEmail">Email address</label><input id="registerEmail" type="email" placeholder="you@example.com" required>
+          <label for="registerPassword">Password</label><input id="registerPassword" type="password" placeholder="At least 6 characters" required minlength="6">
+          <button class="btn btn-primary full-width" type="submit">Create Account</button>
+        </form>
+        <p class="form-footer">Already registered? <a href="#" data-page="login">Login</a></p>
+        <p class="note">Demo only: account data is stored locally in this browser.</p>
+      </div>
+    </section>
+
+    <section id="dashboard" class="page hidden">
+      <div class="page-heading"><span class="eyebrow">YOUR WORKSPACE</span><h1>My Dashboard</h1><p>Manage your stories and keep your ideas flowing.</p></div>
+      <div class="stats-grid">
+        <div class="stat-card"><span>Total Stories</span><strong id="totalPosts">0</strong></div>
+        <div class="stat-card"><span>Published Stories</span><strong id="publishedPosts">0</strong></div>
+      </div>
+      <div class="section-heading"><h2>Your stories</h2><a href="#" class="btn btn-primary" data-page="create">+ New Blog</a></div>
+      <div id="dashboardGrid" class="blog-grid"></div>
+      <p id="dashboardEmpty" class="empty hidden">You haven't written a story yet. Create your first blog!</p>
+    </section>
+
+    <section id="create" class="page hidden">
+      <div class="form-card wide-card">
+        <span class="eyebrow">YOUR NEXT BIG IDEA</span><h1 id="editorHeading">Create a Blog</h1>
+        <p>Turn your thoughts into a story worth sharing.</p>
+        <form id="blogForm">
+          <label for="blogTitle">Blog title</label><input id="blogTitle" type="text" placeholder="Give your story a title..." required maxlength="100">
+          <label for="blogCategory">Category</label>
+          <select id="blogCategory">
+            <option>Technology</option><option>Lifestyle</option><option>Travel</option><option>Education</option><option>Creativity</option><option>Personal Growth</option>
+          </select>
+          <label for="blogExcerpt">Short description</label><input id="blogExcerpt" type="text" placeholder="What is your story about?" required maxlength="180">
+          <label for="blogContent">Blog content</label><textarea id="blogContent" rows="9" placeholder="Start writing your story here..." required></textarea>
+          <div class="form-buttons"><button type="submit" class="btn btn-primary" id="publishBtn">Publish Blog</button><button type="button" class="btn btn-light" id="cancelEdit">Cancel</button></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="article" class="page hidden">
+      <button class="btn btn-light" data-page="home">← Back to stories</button>
+      <article id="articleContent" class="article-content"></article>
+    </section>
+  </main>
+
+  <footer>
+    <a href="#" class="brand" data-page="home">InkSpace<span>.</span></a>
+    <p>A space for ideas, stories, and inspiration.</p>
+    <p>© <span id="year"></span> InkSpace Blog Application</p>
+  </footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="script.js"></script>
+</body>
+</html>
+
