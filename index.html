@@ -1,113 +1,484 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="InkSpace is a place to read, write, and share stories.">
-  <title>InkSpace | Blog Application</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlogSpace | Blog Application</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#635bdb;--dark:#172033;--muted:#667085;--background:#f7f8fc;--border:#e7e9f2}
+body{font-family:Arial,Helvetica,sans-serif;background:var(--background);color:var(--dark);line-height:1.6}
+a{text-decoration:none;color:inherit}
+.navbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px;padding:18px 6%;background:white;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+.logo{font-size:25px;font-weight:bold}.logo span{color:var(--primary)}
+nav{display:flex;flex-wrap:wrap;gap:8px}
+nav a{padding:8px 12px;border-radius:8px;color:var(--muted);font-weight:bold}
+nav a:hover{background:#efeeff;color:var(--primary)}
+main{max-width:1150px;margin:auto;padding:30px 20px 60px}
+section[id]{scroll-margin-top:100px}
+.hero{padding:65px 7%;border-radius:22px;color:white;background:linear-gradient(125deg,#1d2440,#4540a8,#8079ff)}
+.eyebrow{color:var(--primary);font-size:12px;font-weight:bold;letter-spacing:2px;margin-bottom:12px}
+.hero .eyebrow{color:#c6c3ff}
+.hero h1{font-size:clamp(32px,5vw,52px);line-height:1.2;margin-bottom:18px}
+.hero p:not(.eyebrow){max-width:600px;color:#eeeeff}
+.hero-buttons{display:flex;flex-wrap:wrap;gap:12px;margin-top:25px}
+.btn{display:inline-block;padding:12px 18px;border:none;border-radius:9px;cursor:pointer;font-size:15px;font-weight:bold}
+.primary-btn{background:var(--primary);color:white}.primary-btn:hover{background:#5048c7}
+.secondary-btn{background:white;color:var(--dark);border:1px solid var(--border)}
+.hero .secondary-btn{background:transparent;color:white;border-color:#ffffff80}
+.blogs-section,.dashboard-content{margin-top:40px}
+.section-heading{margin-bottom:20px}.section-heading h2{font-size:30px}
+.section-heading p:last-child{color:var(--muted)}
+.blog-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.blog-card{background:white;border:1px solid var(--border);border-radius:15px;overflow:hidden;box-shadow:0 5px 20px #18204408}
+.blog-image{height:120px;display:grid;place-items:center;background:linear-gradient(135deg,#e5e3ff,#f3efff);color:var(--primary);font-size:35px;font-weight:bold}
+.blog-content{padding:22px}.category{display:inline-block;background:#efeeff;color:var(--primary);padding:4px 10px;border-radius:20px;font-size:12px;font-weight:bold}
+.blog-content h3{margin:12px 0;line-height:1.4}.blog-content p{color:var(--muted);margin-bottom:15px;overflow-wrap:anywhere}
+.read-more{color:var(--primary);font-weight:bold}
+.auth-page,.create-page{max-width:570px;margin:35px auto}
+.auth-container,.create-container{background:white;padding:35px;border:1px solid var(--border);border-radius:17px;box-shadow:0 5px 22px #18204408}
+.auth-header{text-align:center;margin-bottom:25px}.auth-header h1{font-size:30px}.auth-header p:last-child{color:var(--muted)}
+.form-group{margin:17px 0}.form-group label{display:block;font-weight:bold;margin-bottom:7px}
+input,select,textarea{width:100%;padding:13px;border:1px solid #d9ddea;border-radius:9px;font-size:15px;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid #c8c4ff;border-color:var(--primary)}
+textarea{resize:vertical;min-height:170px}.full-width{width:100%}
+.auth-footer{text-align:center;margin-top:20px;color:var(--muted)}
+.auth-footer a{color:var(--primary);font-weight:bold}
+.dashboard-header{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;margin:20px 0 30px}
+.dashboard-header h1{font-size:38px}.dashboard-header p:last-child{color:var(--muted)}
+.stats-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.stat-card{background:white;padding:23px;border:1px solid var(--border);border-radius:13px}
+.stat-card h3{font-size:30px}.stat-card p{color:var(--muted)}
+.table-container{overflow-x:auto;background:white;border:1px solid var(--border);border-radius:13px}
+table{width:100%;border-collapse:collapse;min-width:550px}
+th,td{text-align:left;padding:15px;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-size:13px}
+.status{background:#e5f8ef;color:#14764f;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:bold}
+.form-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:20px}
+.message{margin-top:15px;font-weight:bold;color:#14764f;overflow-wrap:anywhere}
+.error{color:#b42318}
+.details-content{background:white;padding:30px;border:1px solid var(--border);border-radius:15px;overflow-wrap:anywhere}
+.details-content h1{margin-bottom:15px}.details-content .body{white-space:pre-wrap;margin-top:25px}
+footer{text-align:center;padding:25px;background:white;border-top:1px solid var(--border);color:var(--muted)}
+[hidden]{display:none!important}
+@media(max-width:760px){
+.navbar{align-items:flex-start;flex-direction:column}
+.blog-grid,.stats-grid{grid-template-columns:1fr}
+.hero{padding:38px 25px}
+.auth-container,.create-container{padding:22px}
+}
+</style>
 </head>
+
 <body>
-  <header class="navbar">
-    <a href="#" class="brand" data-page="home">InkSpace<span>.</span></a>
-    <nav aria-label="Main navigation">
-      <a href="#" data-page="home">Home</a>
-      <a href="#" data-page="dashboard">Dashboard</a>
-      <a href="#" data-page="create">Write a Blog</a>
-    </nav>
-    <div class="nav-actions">
-      <a href="#" class="btn btn-light" data-page="login" id="loginLink">Login</a>
-      <a href="#" class="btn btn-primary" data-page="register" id="registerLink">Get Started</a>
-      <button class="btn btn-light hidden" id="logoutBtn" type="button">Logout</button>
-    </div>
-  </header>
+<header class="navbar">
+<a href="#home" class="logo">Blog<span>Space</span></a>
+<nav>
+<a href="#home">Home</a>
+<a href="#blogs">Blogs</a>
+<a href="#login">Login</a>
+<a href="#register">Register</a>
+<a href="#dashboard">Dashboard</a>
+<a href="#create-blog">Create Blog</a>
+</nav>
+</header>
 
-  <main>
-    <section id="home" class="page">
-      <div class="hero">
-        <span class="eyebrow">WELCOME TO INKSPACE</span>
-        <h1>Ideas deserve<br>to be <span>shared.</span></h1>
-        <p>Discover fresh perspectives, explore inspiring stories, and share your own ideas with the world.</p>
-        <a href="#" class="btn btn-primary" data-page="create">Start Writing →</a>
-      </div>
-      <div class="section-heading">
-        <div><span class="eyebrow">THE LATEST STORIES</span><h2>Explore the blog</h2></div>
-        <input id="searchInput" type="search" placeholder="Search articles..." aria-label="Search articles">
-      </div>
-      <div id="blogGrid" class="blog-grid"></div>
-      <p id="emptyMessage" class="empty hidden">No stories found. Try another search or write the first blog!</p>
-    </section>
+<main>
+<section id="home">
+<div class="hero">
+<p class="eyebrow">WELCOME TO BLOGSPACE</p>
+<h1>Share your ideas.<br>Inspire the world.</h1>
+<p>A simple and modern blogging platform where you can discover ideas, share your thoughts and connect through stories.</p>
+<div class="hero-buttons">
+<a href="#register" class="btn primary-btn">Start Writing</a>
+<a href="#blogs" class="btn secondary-btn">Explore Blogs</a>
+</div>
+</div>
+</section>
 
-    <section id="login" class="page hidden">
-      <div class="form-card">
-        <span class="eyebrow">WELCOME BACK</span><h1>Login to InkSpace</h1>
-        <p>Sign in to manage your stories.</p>
-        <form id="loginForm">
-          <label for="loginEmail">Email address</label><input id="loginEmail" type="email" placeholder="you@example.com" required>
-          <label for="loginPassword">Password</label><input id="loginPassword" type="password" placeholder="Enter your password" required>
-          <button class="btn btn-primary full-width" type="submit">Login</button>
-        </form>
-        <p class="form-footer">New here? <a href="#" data-page="register">Create an account</a></p>
-        <p class="note">Demo only: this is not secure authentication.</p>
-      </div>
-    </section>
+<section id="blogs" class="blogs-section">
+<div class="section-heading">
+<p class="eyebrow">LATEST STORIES</p>
+<h2>Featured Blogs</h2>
+<p>Explore thoughts and ideas from our community.</p>
+</div>
+<div class="blog-grid" id="blogGrid"><p>Loading blogs...</p></div>
+<p id="blogsMessage" class="message"></p>
+</section>
 
-    <section id="register" class="page hidden">
-      <div class="form-card">
-        <span class="eyebrow">JOIN OUR COMMUNITY</span><h1>Create your account</h1>
-        <p>Start sharing your ideas with InkSpace.</p>
-        <form id="registerForm">
-          <label for="registerName">Full name</label><input id="registerName" type="text" placeholder="Your name" required minlength="2">
-          <label for="registerEmail">Email address</label><input id="registerEmail" type="email" placeholder="you@example.com" required>
-          <label for="registerPassword">Password</label><input id="registerPassword" type="password" placeholder="At least 6 characters" required minlength="6">
-          <button class="btn btn-primary full-width" type="submit">Create Account</button>
-        </form>
-        <p class="form-footer">Already registered? <a href="#" data-page="login">Login</a></p>
-        <p class="note">Demo only: account data is stored locally in this browser.</p>
-      </div>
-    </section>
+<section id="blog-details" class="create-page" hidden>
+<div class="details-content">
+<a href="#blogs" class="btn secondary-btn">← Back to Blogs</a>
+<div id="blogDetails" style="margin-top:25px">Select a blog to read.</div>
+</div>
+</section>
 
-    <section id="dashboard" class="page hidden">
-      <div class="page-heading"><span class="eyebrow">YOUR WORKSPACE</span><h1>My Dashboard</h1><p>Manage your stories and keep your ideas flowing.</p></div>
-      <div class="stats-grid">
-        <div class="stat-card"><span>Total Stories</span><strong id="totalPosts">0</strong></div>
-        <div class="stat-card"><span>Published Stories</span><strong id="publishedPosts">0</strong></div>
-      </div>
-      <div class="section-heading"><h2>Your stories</h2><a href="#" class="btn btn-primary" data-page="create">+ New Blog</a></div>
-      <div id="dashboardGrid" class="blog-grid"></div>
-      <p id="dashboardEmpty" class="empty hidden">You haven't written a story yet. Create your first blog!</p>
-    </section>
+<section id="login" class="auth-page">
+<div class="auth-container">
+<div class="auth-header">
+<p class="eyebrow">WELCOME BACK</p>
+<h1>Login to BlogSpace</h1>
+<p>Access your dashboard and manage your blogs.</p>
+</div>
+<form id="loginForm">
+<div class="form-group">
+<label for="loginEmail">Email Address</label>
+<input type="email" id="loginEmail" required>
+</div>
+<div class="form-group">
+<label for="loginPassword">Password</label>
+<input type="password" id="loginPassword" required>
+</div>
+<button type="submit" class="btn primary-btn full-width">Login</button>
+<p id="loginMessage" class="message" role="status"></p>
+</form>
+<p class="auth-footer">Don't have an account? <a href="#register">Create an account</a></p>
+</div>
+</section>
 
-    <section id="create" class="page hidden">
-      <div class="form-card wide-card">
-        <span class="eyebrow">YOUR NEXT BIG IDEA</span><h1 id="editorHeading">Create a Blog</h1>
-        <p>Turn your thoughts into a story worth sharing.</p>
-        <form id="blogForm">
-          <label for="blogTitle">Blog title</label><input id="blogTitle" type="text" placeholder="Give your story a title..." required maxlength="100">
-          <label for="blogCategory">Category</label>
-          <select id="blogCategory">
-            <option>Technology</option><option>Lifestyle</option><option>Travel</option><option>Education</option><option>Creativity</option><option>Personal Growth</option>
-          </select>
-          <label for="blogExcerpt">Short description</label><input id="blogExcerpt" type="text" placeholder="What is your story about?" required maxlength="180">
-          <label for="blogContent">Blog content</label><textarea id="blogContent" rows="9" placeholder="Start writing your story here..." required></textarea>
-          <div class="form-buttons"><button type="submit" class="btn btn-primary" id="publishBtn">Publish Blog</button><button type="button" class="btn btn-light" id="cancelEdit">Cancel</button></div>
-        </form>
-      </div>
-    </section>
+<section id="register" class="auth-page">
+<div class="auth-container">
+<div class="auth-header">
+<p class="eyebrow">JOIN BLOGSPACE</p>
+<h1>Create an Account</h1>
+<p>Start sharing your ideas with the world.</p>
+</div>
+<form id="registerForm">
+<div class="form-group">
+<label for="registerName">Full Name</label>
+<input type="text" id="registerName" required>
+</div>
+<div class="form-group">
+<label for="registerEmail">Email Address</label>
+<input type="email" id="registerEmail" required>
+</div>
+<div class="form-group">
+<label for="registerPassword">Password</label>
+<input type="password" id="registerPassword" minlength="6" required>
+</div>
+<div class="form-group">
+<label for="confirmPassword">Confirm Password</label>
+<input type="password" id="confirmPassword" minlength="6" required>
+</div>
+<button type="submit" class="btn primary-btn full-width">Create Account</button>
+<p id="registerMessage" class="message" role="status"></p>
+</form>
+<p class="auth-footer">Already have an account? <a href="#login">Login here</a></p>
+</div>
+</section>
 
-    <section id="article" class="page hidden">
-      <button class="btn btn-light" data-page="home">← Back to stories</button>
-      <article id="articleContent" class="article-content"></article>
-    </section>
-  </main>
+<section id="dashboard">
+<div class="dashboard-header">
+<div>
+<p class="eyebrow">YOUR WORKSPACE</p>
+<h1>Dashboard</h1>
+<p>Manage your blog posts and create new content.</p>
+<p id="currentUserMessage"></p>
+</div>
+<a href="#create-blog" class="btn primary-btn">+ Create Blog</a>
+</div>
+<div class="stats-grid">
+<div class="stat-card"><h3 id="totalBlogs">0</h3><p>Total Blogs</p></div>
+<div class="stat-card"><h3>—</h3><p>Total Views</p></div>
+<div class="stat-card"><h3>—</h3><p>Comments</p></div>
+</div>
+<section class="dashboard-content">
+<div class="section-heading">
+<p class="eyebrow">YOUR CONTENT</p>
+<h2>Recent Blogs</h2>
+</div>
+<div class="table-container">
+<table>
+<thead><tr><th>Title</th><th>Category</th><th>Date</th><th>Status</th></tr></thead>
+<tbody id="blogTableBody"></tbody>
+</table>
+</div>
+</section>
+</section>
 
-  <footer>
-    <a href="#" class="brand" data-page="home">InkSpace<span>.</span></a>
-    <p>A space for ideas, stories, and inspiration.</p>
-    <p>© <span id="year"></span> InkSpace Blog Application</p>
-  </footer>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="script.js"></script>
+<section id="create-blog" class="create-page">
+<div class="create-container">
+<div class="auth-header">
+<p class="eyebrow">CREATE CONTENT</p>
+<h1>Write a New Blog</h1>
+<p>Share your knowledge, experiences and ideas.</p>
+</div>
+<form id="blogForm">
+<div class="form-group">
+<label for="blogTitle">Blog Title</label>
+<input type="text" id="blogTitle" required>
+</div>
+<div class="form-group">
+<label for="blogCategory">Category</label>
+<select id="blogCategory" required>
+<option value="">Select a category</option>
+<option>Technology</option>
+<option>Cybersecurity</option>
+<option>Programming</option>
+<option>Productivity</option>
+<option>Learning</option>
+</select>
+</div>
+<div class="form-group">
+<label for="blogContent">Blog Content</label>
+<textarea id="blogContent" rows="8" required></textarea>
+</div>
+<div class="form-actions">
+<a href="#dashboard" class="btn secondary-btn">Cancel</a>
+<button type="submit" class="btn primary-btn">Publish Blog</button>
+</div>
+<p id="blogMessage" class="message" role="status"></p>
+</form>
+</div>
+</section>
+</main>
+
+<footer><p>© 2026 BlogSpace. Built as a Codomax Internship Project.</p></footer>
+
+<script>
+const API_BASE = "http://localhost:3000/api";
+let blogs = [];
+let currentUser = null;
+
+try {
+    currentUser = JSON.parse(localStorage.getItem("blogspace_current_user") || "null");
+} catch {
+    currentUser = null;
+}
+
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+}
+
+async function apiRequest(path, options = {}) {
+    const response = await fetch(API_BASE + path, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            ...(options.headers || {})
+        }
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        throw new Error(data.message || data.error || "Request failed. Please try again.");
+    }
+
+    return data;
+}
+
+function showMessage(id, text, isError = false) {
+    const element = document.getElementById(id);
+    element.textContent = text;
+    element.className = isError ? "message error" : "message";
+}
+
+function formatDate(value) {
+    if (!value) return "—";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString();
+}
+
+function getBlogList(data) {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.blogs)) return data.blogs;
+    return [];
+}
+
+async function loadBlogs() {
+    const grid = document.getElementById("blogGrid");
+    grid.innerHTML = "<p>Loading blogs from the database...</p>";
+
+    try {
+        const data = await apiRequest("/blogs");
+        blogs = getBlogList(data);
+        renderBlogs();
+        renderDashboard();
+    } catch (error) {
+        grid.innerHTML = `<p class="error">${escapeHTML(error.message)}</p>`;
+        showMessage("blogsMessage", "Could not load blogs. Check that your backend is running.", true);
+    }
+}
+
+function renderBlogs() {
+    const grid = document.getElementById("blogGrid");
+
+    if (!blogs.length) {
+        grid.innerHTML = "<p>No blogs yet. Be the first to publish!</p>";
+        return;
+    }
+
+    grid.innerHTML = blogs.map((blog, index) => `
+        <article class="blog-card">
+            <div class="blog-image">${String(index + 1).padStart(2, "0")}</div>
+            <div class="blog-content">
+                <span class="category">${escapeHTML(blog.category || "General")}</span>
+                <h3>${escapeHTML(blog.title)}</h3>
+                <p>${escapeHTML((blog.content || "").slice(0, 150))}</p>
+                <p><small>By ${escapeHTML(blog.author || "Anonymous")}</small></p>
+                <a href="#blog-details" class="read-more" data-read="${escapeHTML(blog._id || "")}">Read More →</a>
+            </div>
+        </article>
+    `).join("");
+}
+
+function renderDashboard() {
+    document.getElementById("totalBlogs").textContent = blogs.length;
+
+    document.getElementById("blogTableBody").innerHTML = blogs.map(blog => `
+        <tr>
+            <td>${escapeHTML(blog.title)}</td>
+            <td>${escapeHTML(blog.category || "General")}</td>
+            <td>${escapeHTML(formatDate(blog.createdAt || blog.date))}</td>
+            <td><span class="status">Published</span></td>
+        </tr>
+    `).join("");
+
+    document.getElementById("currentUserMessage").textContent =
+        currentUser ? "Logged in as " + currentUser.name : "Please log in to publish a blog.";
+}
+
+// REGISTER: password is sent to the backend, not stored in localStorage.
+document.getElementById("registerForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const name = document.getElementById("registerName").value.trim();
+    const email = document.getElementById("registerEmail").value.trim().toLowerCase();
+    const password = document.getElementById("registerPassword").value;
+    const confirm = document.getElementById("confirmPassword").value;
+
+    if (password !== confirm) {
+        showMessage("registerMessage", "Passwords do not match.", true);
+        return;
+    }
+
+    try {
+        const data = await apiRequest("/register", {
+            method: "POST",
+            body: JSON.stringify({ name, email, password })
+        });
+
+        currentUser = data.user
+            ? { name: data.user.name || name, email: data.user.email || email }
+            : { name, email };
+
+        localStorage.setItem("blogspace_current_user", JSON.stringify(currentUser));
+        this.reset();
+        showMessage("registerMessage", data.message || "Account created successfully!");
+        renderDashboard();
+        location.hash = "dashboard";
+    } catch (error) {
+        showMessage("registerMessage", error.message, true);
+    }
+});
+
+// LOGIN
+document.getElementById("loginForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+    const password = document.getElementById("loginPassword").value;
+
+    try {
+        const data = await apiRequest("/login", {
+            method: "POST",
+            body: JSON.stringify({ email, password })
+        });
+
+        currentUser = {
+            name: data.user?.name || email.split("@")[0],
+            email: data.user?.email || email
+        };
+
+        localStorage.setItem("blogspace_current_user", JSON.stringify(currentUser));
+        this.reset();
+        showMessage("loginMessage", data.message || "Login successful!");
+        renderDashboard();
+        location.hash = "dashboard";
+    } catch (error) {
+        showMessage("loginMessage", error.message, true);
+    }
+});
+
+// CREATE BLOG: save through the backend.
+document.getElementById("blogForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    if (!currentUser) {
+        showMessage("blogMessage", "Please register or log in before publishing.", true);
+        location.hash = "login";
+        return;
+    }
+
+    const title = document.getElementById("blogTitle").value.trim();
+    const category = document.getElementById("blogCategory").value;
+    const content = document.getElementById("blogContent").value.trim();
+
+    try {
+        const data = await apiRequest("/blogs", {
+            method: "POST",
+            body: JSON.stringify({
+                title,
+                category,
+                content,
+                author: currentUser.name
+            })
+        });
+
+        this.reset();
+        showMessage("blogMessage", data.message || "Blog published successfully!");
+        await loadBlogs();
+        location.hash = "dashboard";
+    } catch (error) {
+        showMessage("blogMessage", error.message, true);
+    }
+});
+
+// INDIVIDUAL BLOG DETAILS
+document.getElementById("blogGrid").addEventListener("click", async function(event) {
+    const link = event.target.closest("[data-read]");
+    if (!link) return;
+
+    event.preventDefault();
+
+    const blogId = link.dataset.read;
+    const details = document.getElementById("blogDetails");
+    document.getElementById("blog-details").hidden = false;
+    details.innerHTML = "<p>Loading blog details...</p>";
+    location.hash = "blog-details";
+
+    if (!blogId) {
+        details.innerHTML = "<p class='error'>This blog does not have a database ID.</p>";
+        return;
+    }
+
+    try {
+        const blog = await apiRequest("/blogs/" + encodeURIComponent(blogId));
+
+        details.innerHTML = `
+            <p class="eyebrow">${escapeHTML(blog.category || "BLOG")}</p>
+            <h1>${escapeHTML(blog.title)}</h1>
+            <p style="color:#667085">By ${escapeHTML(blog.author || "Anonymous")} · ${escapeHTML(formatDate(blog.createdAt))}</p>
+            <div class="body">${escapeHTML(blog.content || "")}</div>
+        `;
+    } catch (error) {
+        details.innerHTML = `<p class="error">${escapeHTML(error.message)}</p>`;
+    }
+});
+
+window.addEventListener("hashchange", function() {
+    if (location.hash !== "#blog-details") {
+        document.getElementById("blog-details").hidden = true;
+    }
+});
+
+renderDashboard();
+loadBlogs();
+</script>
 </body>
 </html>
-
