@@ -1,588 +1,283 @@
+const API_BASE = "http://localhost:3000/api";
+const CURRENT_USER_KEY = "blogspace_current_user";
 
-const API_URL = "http://localhost:3000/api";
-const STORAGE_KEY = "inkspace_blogs_v1";
-const SESSION_KEY = "inkspace_demo_session_v1";
+let blogs = [];
+let currentUser = readCurrentUser();
+let editingBlogId = null;
+let searchTimer = null;
 
-const starterBlogs = [
-  {
-    id: "sample-1",
-    title: "Small Habits, Big Changes",
-    category: "Personal Growth",
-    excerpt: "How tiny daily choices can help you build a more intentional life.",
-    content: "Big changes do not always begin with big decisions. Often, progress comes from small actions repeated consistently. Start with one habit that feels manageable, make room for it in your day, and celebrate your progress.",
-    author: "InkSpace Team",
-    date: "2026-09-10",
-    sample: true
-  },
-  {
-    id: "sample-2",
-    title: "Technology That Brings Us Closer",
-    category: "Technology",
-    excerpt: "Exploring how thoughtful technology can help people connect.",
-    content: "Technology is most useful when it helps people solve real problems. Digital tools can make creativity and collaboration more accessible.",
-    author: "InkSpace Team",
-    date: "2026-09-12",
-    sample: true
-  },
-  {
-    id: "sample-3",
-    title: "The Art of Slow Travel",
-    category: "Travel",
-    excerpt: "Discover more by slowing down and noticing the details.",
-    content: "Travel is not only about how many places you visit. It is also about the details you notice, the conversations you have, and the new things you experience.",
-    author: "InkSpace Team",
-    date: "2026-09-15",
-    sample: true
-  }
-];
+function readCurrentUser() {
+  try { return JSON.parse(localStorage.getItem(CURRENT_USER_KEY)) || null; }
+  catch { return null; }
+}
 
-let blogs = [
-  ...starterBlogs,
-  ...readStored(STORAGE_KEY, []).filter(blog => !blog.sample)
-];
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
 
-let currentUser = readStored(SESSION_KEY, null);
-let editingId = null;
-let toastTimer;
+function showMessage(id, text, error = false) {
+  const element = document.getElementById(id);
+  if (!element) return;
+  element.textContent = text;
+  element.className = error ? "message error" : "message";
+}
 
-function readStored(key, fallback) {
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || `Request failed (${response.status})`);
+  return data;
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString();
+}
+
+function updateUserUI() {
+  document.getElementById("welcomeMessage").textContent = currentUser
+    ? `Welcome, ${currentUser.name}! Manage your blog posts below.`
+    : "Log in to manage your blogs.";
+  document.getElementById("logoutButton").hidden = !currentUser;
+}
+
+async function loadBlogs(search = "", category = "all") {
+  const grid = document.getElementById("blogGrid");
+  grid.innerHTML = "<p>Loading blogs...</p>";
   try {
-    const value = localStorage.getItem(key);
-    return value ? JSON.parse(value) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveBlogs() {
-  const localBlogs = blogs.filter(
-    blog => !blog.sample && !blog.server
-  );
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(localBlogs));
-}
-
-function escapeHTML(value = "") {
-  return String(value).replace(/[&<>"']/g, character => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[character]);
-}
-
-function showToast(message) {
-  const toast = document.getElementById("toast");
-  if (!toast) return;
-
-  toast.textContent = message;
-  toast.classList.add("show");
-  clearTimeout(toastTimer);
-
-  toastTimer = setTimeout(
-    () => toast.classList.remove("show"),
-    2800
-  );
-}
-
-// Load blogs from the Express backend
-async function loadServerBlogs() {
-  try {
-    const response = await fetch(`${API_URL}/blogs`);
-
-    if (!response.ok) {
-      throw new Error("Could not load blogs.");
-    }
-
-    const serverBlogs = await response.json();
-
-    const formattedBlogs = serverBlogs.map(blog => ({
-      ...blog,
-      id: String(blog.id),
-      category: blog.category || "Personal Growth",
-      excerpt: blog.excerpt ||
-        String(blog.content || "").slice(0, 120),
-      date: blog.date ||
-        (blog.createdAt
-          ? blog.createdAt.slice(0, 10)
-          : ""),
-      owner:
-        currentUser &&
-        currentUser.name === blog.author
-          ? currentUser.email
-          : null,
-      server: true
-    }));
-
-    // Keep sample and older local posts, replacing API posts
-    blogs = blogs.filter(blog => !blog.server);
-    blogs.push(...formattedBlogs);
-
-    renderHome();
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (category && category !== "all") params.set("category", category);
+    blogs = await apiRequest(`/blogs${params.toString() ? `?${params}` : ""}`);
+    renderBlogs();
     renderDashboard();
+    showMessage("blogsMessage", blogs.length ? `${blogs.length} blog(s) found.` : "No blogs found yet.");
   } catch (error) {
-    showToast(
-      "Could not load server blogs. Check that your backend is running."
-    );
+    grid.innerHTML = "";
+    showMessage("blogsMessage", `${error.message}. Check that the backend is running.`, true);
   }
 }
 
-function navigate(page) {
-  const target = document.getElementById(page)
-    ? page
-    : "home";
-
-  document.querySelectorAll(".page").forEach(section => {
-    section.classList.toggle(
-      "hidden",
-      section.id !== target
-    );
-  });
-
-  document.querySelectorAll("[data-page]").forEach(link => {
-    link.classList.toggle(
-      "active",
-      link.dataset.page === target
-    );
-  });
-
-  if (target === "dashboard") renderDashboard();
-  if (target === "home") renderHome();
-
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-document.addEventListener("click", event => {
-  const link = event.target.closest("[data-page]");
-  if (!link) return;
-
-  event.preventDefault();
-  const page = link.dataset.page;
-
-  if (
-    (page === "create" || page === "dashboard") &&
-    !currentUser
-  ) {
-    showToast("Please log in first.");
-    navigate("login");
+function renderBlogs() {
+  const grid = document.getElementById("blogGrid");
+  if (!blogs.length) {
+    grid.innerHTML = "<p>No blogs yet. Log in and create the first one!</p>";
     return;
   }
-
-  navigate(page);
-});
-
-function updateAuthUI() {
-  const loggedIn = Boolean(currentUser);
-
-  document.getElementById("loginLink")
-    .classList.toggle("hidden", loggedIn);
-
-  document.getElementById("registerLink")
-    .classList.toggle("hidden", loggedIn);
-
-  document.getElementById("logoutBtn")
-    .classList.toggle("hidden", !loggedIn);
-}
-
-function blogCard(blog, dashboard = false) {
-  const icons = {
-    Technology: "💻",
-    Lifestyle: "🌿",
-    Travel: "✈️",
-    Education: "📚",
-    Creativity: "🎨",
-    "Personal Growth": "✨"
-  };
-
-  const icon = icons[blog.category] || "✍️";
-
-  const artNumber =
-    (Math.abs(
-      String(blog.id)
-        .split("")
-        .reduce((sum, character) =>
-          sum + character.charCodeAt(0), 0)
-    ) % 5) + 1;
-
-  // Server-created blogs do not have edit/delete APIs yet
-  const actions =
-    dashboard &&
-    !blog.sample &&
-    !blog.server &&
-    blog.owner === currentUser?.email
-      ? `
-        <div class="card-actions">
-          <button class="btn btn-light small-btn"
-            data-edit="${escapeHTML(blog.id)}">Edit</button>
-          <button class="btn small-btn delete-btn"
-            data-delete="${escapeHTML(blog.id)}">Delete</button>
-        </div>`
-      : "";
-
-  return `
+  grid.innerHTML = blogs.map((blog, index) => `
     <article class="blog-card">
-      <div class="card-art art-${artNumber}" aria-hidden="true">
-        ${icon}
-      </div>
-      <div class="card-body">
-        <span class="category">
-          ${escapeHTML(blog.category)}
-        </span>
+      <div class="blog-image">${String(index + 1).padStart(2, "0")}</div>
+      <div class="blog-content">
+        <span class="category">${escapeHTML(blog.category || "General")}</span>
         <h3>${escapeHTML(blog.title)}</h3>
-        <p>${escapeHTML(blog.excerpt)}</p>
-        <div class="card-meta">
-          <span>By ${escapeHTML(blog.author || "InkSpace Writer")}</span>
-          <span>${escapeHTML(blog.date || "")}</span>
-        </div>
-        <div class="card-actions">
-          <button class="btn btn-light small-btn"
-            data-read="${escapeHTML(blog.id)}">
-            Read story →
-          </button>
-        </div>
-        ${actions}
+        <p>${escapeHTML((blog.content || "").slice(0, 150))}${(blog.content || "").length > 150 ? "…" : ""}</p>
+        <p>By ${escapeHTML(blog.author || "Unknown")} · ${escapeHTML(formatDate(blog.createdAt))}</p>
+        <a href="#blogs" class="read-more" data-read="${escapeHTML(blog._id)}">Read More →</a>
       </div>
-    </article>`;
-}
-
-function renderHome() {
-  const searchElement = document.getElementById("searchInput");
-  const search = searchElement.value.trim().toLowerCase();
-
-  const filtered = blogs.filter(blog =>
-    [
-      blog.title,
-      blog.category,
-      blog.excerpt,
-      blog.content,
-      blog.author
-    ].some(value =>
-      String(value || "").toLowerCase().includes(search)
-    )
-  );
-
-  document.getElementById("blogGrid").innerHTML =
-    filtered.map(blog => blogCard(blog)).join("");
-
-  document.getElementById("emptyMessage")
-    .classList.toggle("hidden", filtered.length > 0);
+    </article>`).join("");
 }
 
 function renderDashboard() {
-  const mine = currentUser
-    ? blogs.filter(blog =>
-        !blog.sample &&
-        blog.owner === currentUser.email
-      )
-    : [];
+  document.getElementById("totalBlogs").textContent = blogs.length;
+  const mine = currentUser ? blogs.filter(blog =>
+    (blog.authorId && blog.authorId === currentUser.id) ||
+    (blog.author === currentUser.name)
+  ) : [];
+  document.getElementById("myBlogs").textContent = mine.length;
+  document.getElementById("categoriesCount").textContent =
+    new Set(blogs.map(blog => blog.category || "General")).size;
 
-  document.getElementById("totalPosts").textContent =
-    mine.length;
-
-  document.getElementById("publishedPosts").textContent =
-    mine.length;
-
-  document.getElementById("dashboardGrid").innerHTML =
-    mine.map(blog => blogCard(blog, true)).join("");
-
-  document.getElementById("dashboardEmpty")
-    .classList.toggle("hidden", mine.length > 0);
+  const body = document.getElementById("blogTableBody");
+  if (!blogs.length) {
+    body.innerHTML = '<tr><td colspan="5">No blogs to display.</td></tr>';
+    return;
+  }
+  body.innerHTML = blogs.map(blog => `
+    <tr>
+      <td>${escapeHTML(blog.title)}</td>
+      <td>${escapeHTML(blog.category || "General")}</td>
+      <td>${escapeHTML(formatDate(blog.createdAt))}</td>
+      <td>${escapeHTML(blog.author || "Unknown")}</td>
+      <td>
+        <button type="button" class="btn primary-btn" data-edit="${escapeHTML(blog._id)}">Edit</button>
+        <button type="button" class="btn secondary-btn" data-delete="${escapeHTML(blog._id)}">Delete</button>
+      </td>
+    </tr>`).join("");
 }
 
-function openArticle(id) {
-  const blog = blogs.find(item => String(item.id) === String(id));
-  if (!blog) return;
+document.getElementById("registerForm").addEventListener("submit", async function(event) {
+  event.preventDefault();
+  const name = document.getElementById("registerName").value.trim();
+  const email = document.getElementById("registerEmail").value.trim();
+  const password = document.getElementById("registerPassword").value;
+  const confirm = document.getElementById("confirmPassword").value;
+  if (password !== confirm) return showMessage("registerMessage", "Passwords do not match.", true);
+  if (password.length < 8) return showMessage("registerMessage", "Password must be at least 8 characters.", true);
+  try {
+    const result = await apiRequest("/register", {
+      method: "POST", body: JSON.stringify({ name, email, password })
+    });
+    currentUser = result.user;
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
+    this.reset();
+    updateUserUI();
+    showMessage("registerMessage", result.message);
+    await loadBlogs();
+    location.hash = "dashboard";
+  } catch (error) { showMessage("registerMessage", error.message, true); }
+});
 
-  document.getElementById("articleContent").innerHTML = `
-    <span class="category">${escapeHTML(blog.category)}</span>
-    <h1>${escapeHTML(blog.title)}</h1>
-    <p class="card-meta">
-      By ${escapeHTML(blog.author || "InkSpace Writer")}
-      · ${escapeHTML(blog.date || "")}
-    </p>
-    <p><strong>${escapeHTML(blog.excerpt)}</strong></p>
-    <div class="article-text">${escapeHTML(blog.content)}</div>
-  `;
+document.getElementById("loginForm").addEventListener("submit", async function(event) {
+  event.preventDefault();
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  try {
+    const result = await apiRequest("/login", {
+      method: "POST", body: JSON.stringify({ email, password })
+    });
+    currentUser = result.user;
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
+    this.reset();
+    updateUserUI();
+    showMessage("loginMessage", result.message);
+    await loadBlogs();
+    location.hash = "dashboard";
+  } catch (error) { showMessage("loginMessage", error.message, true); }
+});
 
-  navigate("article");
+document.getElementById("logoutButton").addEventListener("click", () => {
+  currentUser = null;
+  localStorage.removeItem(CURRENT_USER_KEY);
+  updateUserUI();
+  renderDashboard();
+  location.hash = "home";
+});
+
+function resetBlogForm() {
+  editingBlogId = null;
+  document.getElementById("blogForm").reset();
+  document.getElementById("formHeading").textContent = "Write a New Blog";
+  document.getElementById("publishButton").textContent = "Publish Blog";
+  document.getElementById("cancelEditButton").hidden = true;
 }
 
-document.addEventListener("click", event => {
-  const readButton = event.target.closest("[data-read]");
+document.getElementById("cancelEditButton").addEventListener("click", resetBlogForm);
+
+document.getElementById("blogForm").addEventListener("submit", async function(event) {
+  event.preventDefault();
+  if (!currentUser) {
+    showMessage("blogMessage", "Please register or log in before publishing.", true);
+    location.hash = "login";
+    return;
+  }
+
+  const title = document.getElementById("blogTitle").value.trim();
+  const category = document.getElementById("blogCategory").value;
+  const content = document.getElementById("blogContent").value.trim();
+  if (!title || !category || !content) {
+    return showMessage("blogMessage", "Please complete every field.", true);
+  }
+
+  const payload = {
+    title, category, content,
+    author: currentUser.name,
+    authorId: currentUser.id
+  };
+
+  try {
+    let result;
+    if (editingBlogId) {
+      const existing = blogs.find(blog => blog._id === editingBlogId);
+      payload.author = existing ? existing.author : currentUser.name;
+      result = await apiRequest(`/blogs/${editingBlogId}`, {
+        method: "PUT", body: JSON.stringify(payload)
+      });
+    } else {
+      result = await apiRequest("/blogs", {
+        method: "POST", body: JSON.stringify(payload)
+      });
+    }
+    resetBlogForm();
+    showMessage("blogMessage", result.message);
+    await loadBlogs();
+    location.hash = "dashboard";
+  } catch (error) { showMessage("blogMessage", error.message, true); }
+});
+
+document.getElementById("blogTableBody").addEventListener("click", async event => {
   const editButton = event.target.closest("[data-edit]");
   const deleteButton = event.target.closest("[data-delete]");
 
-  if (readButton) openArticle(readButton.dataset.read);
-
   if (editButton) {
-    const blog = blogs.find(
-      item => String(item.id) === editButton.dataset.edit
-    );
-
-    if (
-      !blog ||
-      blog.server ||
-      !currentUser ||
-      blog.owner !== currentUser.email
-    ) return;
-
-    editingId = blog.id;
-    document.getElementById("blogTitle").value = blog.title;
-    document.getElementById("blogCategory").value = blog.category;
-    document.getElementById("blogExcerpt").value = blog.excerpt;
-    document.getElementById("blogContent").value = blog.content;
-    document.getElementById("editorHeading").textContent =
-      "Edit Your Blog";
-    document.getElementById("publishBtn").textContent =
-      "Save Changes";
-
-    navigate("create");
+    if (!currentUser) return alert("Please log in first.");
+    const blog = blogs.find(item => item._id === editButton.dataset.edit);
+    if (!blog) return;
+    // This demo only offers editing to the author by matching author name.
+    if (blog.author !== currentUser.name) {
+      return alert("You can only edit blogs created under your name.");
+    }
+    editingBlogId = blog._id;
+    document.getElementById("blogTitle").value = blog.title || "";
+    document.getElementById("blogCategory").value = blog.category || "General";
+    document.getElementById("blogContent").value = blog.content || "";
+    document.getElementById("formHeading").textContent = "Edit Blog";
+    document.getElementById("publishButton").textContent = "Save Changes";
+    document.getElementById("cancelEditButton").hidden = false;
+    showMessage("blogMessage", "Make your changes, then select Save Changes.");
+    location.hash = "create-blog";
+    return;
   }
 
   if (deleteButton) {
-    const blog = blogs.find(
-      item => String(item.id) === deleteButton.dataset.delete
-    );
-
-    if (
-      !blog ||
-      blog.server ||
-      !currentUser ||
-      blog.owner !== currentUser.email
-    ) return;
-
-    if (confirm("Delete this blog post? This cannot be undone.")) {
-      blogs = blogs.filter(item => item.id !== blog.id);
-      saveBlogs();
-      renderDashboard();
-      renderHome();
-      showToast("Blog deleted.");
+    if (!currentUser) return alert("Please log in first.");
+    const blog = blogs.find(item => item._id === deleteButton.dataset.delete);
+    if (!blog) return;
+    if (blog.author !== currentUser.name) {
+      return alert("You can only delete blogs created under your name.");
     }
+    if (!confirm(`Permanently delete "${blog.title}"? This cannot be undone.`)) return;
+    try {
+      const result = await apiRequest(`/blogs/${blog._id}`, { method: "DELETE" });
+      showMessage("dashboardMessage", result.message);
+      await loadBlogs(
+        document.getElementById("searchInput").value,
+        document.getElementById("categoryFilter").value
+      );
+    } catch (error) { showMessage("dashboardMessage", error.message, true); }
   }
 });
 
-document.getElementById("searchInput")
-  .addEventListener("input", renderHome);
-
-// USER REGISTRATION API
-document.getElementById("registerForm")
-  .addEventListener("submit", async event => {
-    event.preventDefault();
-
-    const name = document.getElementById("registerName")
-      .value.trim();
-
-    const email = document.getElementById("registerEmail")
-      .value.trim().toLowerCase();
-
-    const password = document.getElementById("registerPassword")
-      .value;
-
-    try {
-      const response = await fetch(`${API_URL}/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        showToast(data.message || "Registration failed.");
-        return;
-      }
-
-      currentUser = data.user;
-      localStorage.setItem(
-        SESSION_KEY,
-        JSON.stringify(currentUser)
-      );
-
-      event.target.reset();
-      updateAuthUI();
-      showToast("Account created! Welcome to InkSpace.");
-      navigate("dashboard");
-    } catch (error) {
-      showToast(
-        "Cannot connect to the backend. Check that the server is running."
-      );
-    }
-  });
-
-// USER LOGIN API
-document.getElementById("loginForm")
-  .addEventListener("submit", async event => {
-    event.preventDefault();
-
-    const email = document.getElementById("loginEmail")
-      .value.trim().toLowerCase();
-
-    const password = document.getElementById("loginPassword")
-      .value;
-
-    try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        showToast(data.message || "Login failed.");
-        return;
-      }
-
-      currentUser = data.user;
-      localStorage.setItem(
-        SESSION_KEY,
-        JSON.stringify(currentUser)
-      );
-
-      event.target.reset();
-      updateAuthUI();
-      showToast("Welcome back, " + currentUser.name + "!");
-      await loadServerBlogs();
-      navigate("dashboard");
-    } catch (error) {
-      showToast(
-        "Cannot connect to the backend. Check that the server is running."
-      );
-    }
-  });
-
-// LOGOUT
-document.getElementById("logoutBtn").addEventListener("click", () => {
-  currentUser = null;
-  localStorage.removeItem(SESSION_KEY);
-  updateAuthUI();
-  showToast("You have logged out.");
-  navigate("home");
+document.getElementById("blogGrid").addEventListener("click", event => {
+  const link = event.target.closest("[data-read]");
+  if (!link) return;
+  event.preventDefault();
+  const blog = blogs.find(item => item._id === link.dataset.read);
+  if (blog) alert(`${blog.title}\n\nCategory: ${blog.category || "General"}\nBy: ${blog.author}\n\n${blog.content}`);
 });
 
-// CREATE BLOG API
-document.getElementById("blogForm")
-  .addEventListener("submit", async event => {
+document.getElementById("searchButton").addEventListener("click", () => {
+  loadBlogs(document.getElementById("searchInput").value, document.getElementById("categoryFilter").value);
+});
+document.getElementById("clearSearchButton").addEventListener("click", () => {
+  document.getElementById("searchInput").value = "";
+  document.getElementById("categoryFilter").value = "all";
+  loadBlogs();
+});
+document.getElementById("categoryFilter").addEventListener("change", () => {
+  loadBlogs(document.getElementById("searchInput").value, document.getElementById("categoryFilter").value);
+});
+document.getElementById("searchInput").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
     event.preventDefault();
-
-    if (!currentUser) {
-      showToast("Please log in first.");
-      navigate("login");
-      return;
-    }
-
-    const title = document.getElementById("blogTitle")
-      .value.trim();
-
-    const category = document.getElementById("blogCategory").value;
-
-    const excerpt = document.getElementById("blogExcerpt")
-      .value.trim();
-
-    const content = document.getElementById("blogContent")
-      .value.trim();
-
-    if (!title || !excerpt || !content) {
-      showToast("Please complete all required fields.");
-      return;
-    }
-
-    // Editing older browser-only posts remains local for now
-    if (editingId) {
-      const index = blogs.findIndex(blog =>
-        String(blog.id) === String(editingId) &&
-        !blog.server &&
-        blog.owner === currentUser.email
-      );
-
-      if (index !== -1) {
-        blogs[index] = {
-          ...blogs[index],
-          title,
-          category,
-          excerpt,
-          content
-        };
-      }
-
-      saveBlogs();
-      showToast("Your local blog has been updated.");
-      resetEditor();
-      renderHome();
-      navigate("dashboard");
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/blogs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          content,
-          author: currentUser.name
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        showToast(data.message || "Could not publish blog.");
-        return;
-      }
-
-      const savedBlog = {
-        ...data.blog,
-        id: String(data.blog.id),
-        title,
-        category,
-        excerpt,
-        content,
-        author: currentUser.name,
-        owner: currentUser.email,
-        date: data.blog.createdAt
-          ? data.blog.createdAt.slice(0, 10)
-          : new Date().toISOString().slice(0, 10),
-        server: true
-      };
-
-      blogs = blogs.filter(blog =>
-        String(blog.id) !== String(savedBlog.id)
-      );
-      blogs.push(savedBlog);
-
-      resetEditor();
-      renderHome();
-      renderDashboard();
-      showToast("Your blog has been published to the backend!");
-      navigate("dashboard");
-    } catch (error) {
-      showToast(
-        "Cannot connect to the backend. Check that the server is running."
-      );
-    }
-  });
-
-function resetEditor() {
-  editingId = null;
-  document.getElementById("blogForm").reset();
-  document.getElementById("editorHeading").textContent =
-    "Create a Blog";
-  document.getElementById("publishBtn").textContent =
-    "Publish Blog";
-}
-
-document.getElementById("cancelEdit").addEventListener("click", () => {
-  resetEditor();
-  navigate(currentUser ? "dashboard" : "home");
+    loadBlogs(document.getElementById("searchInput").value, document.getElementById("categoryFilter").value);
+  }
 });
 
-document.getElementById("year").textContent =
-  new Date().getFullYear();
-
-updateAuthUI();
-renderHome();
-navigate("home");
-loadServerBlogs();
+updateUserUI();
+loadBlogs();

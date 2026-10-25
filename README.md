@@ -1,72 +1,25 @@
-# Codomax Blog Application
+# Codomax BlogSpace — Module 4 CRUD
 
-## About the Project
+## Files
+- `index.html`: application page structure
+- `style.css`: responsive styling
+- `script.js`: frontend API calls and UI behavior
+- `backend/server.js`: Express/Mongoose API
 
-A simple blog application backend developed as part of the Codomax internship, using Node.js and Express.js.
+## Setup
+1. Keep your existing `backend/.env` file and make sure it contains `MONGODB_URI` and optionally `PORT=3000`.
+2. From the `backend` folder, run `npm.cmd start` in PowerShell.
+3. Open the root `index.html` with VS Code Live Server or visit `http://localhost:3000` if Express static serving is configured as in `server.js`.
+4. Register a new account, log in, create a blog, then test Edit and Delete from the dashboard.
 
-## Features
+## API routes
+- `POST /api/register`
+- `POST /api/login`
+- `GET /api/blogs?search=...&category=...`
+- `GET /api/blogs/:id`
+- `POST /api/blogs`
+- `PUT /api/blogs/:id`
+- `DELETE /api/blogs/:id`
 
-* User registration
-* User login
-* Create blog posts
-* Retrieve all blog posts
-* JSON-based API responses
-* CORS support
-
-## Technologies Used
-
-* Node.js
-* Express.js
-* JavaScript
-* HTML and CSS
-
-## Project Structure
-
-* `server.js` — Backend server and API routes
-* `package.json` — Project configuration and dependencies
-* `package-lock.json` — Dependency lock file
-* `index.html` — Frontend page
-* `style.css` — Frontend styling
-* `script.js` — Frontend functionality
-
-## How to Run
-
-1. Install Node.js.
-
-2. Download or clone this repository.
-
-3. Open a terminal in the project folder.
-
-4. Install dependencies:
-
-   `npm install`
-
-5. Start the server:
-
-   `npm start`
-
-6. Open `http://localhost:3000` in your browser.
-
-The home route should return a message confirming that the Codomax Blog API is running.
-
-## API Endpoints
-
-| Method | Endpoint        | Purpose                 |
-| ------ | --------------- | ----------------------- |
-| GET    | `/`             | Check server status     |
-| POST   | `/api/register` | Register a user         |
-| POST   | `/api/login`    | Log in a user           |
-| POST   | `/api/blogs`    | Create a blog post      |
-| GET    | `/api/blogs`    | Retrieve all blog posts |
-
-## Notes
-
-This project currently uses temporary in-memory storage. User accounts and blog posts are reset when the server restarts. Password hashing and persistent database storage are not implemented yet.
-
-## Author
-
-Javeria Eiman
-
-## Internship
-
-Codomax Internship — Module 2
+## Important security note
+This is an internship/demo implementation. The frontend's localStorage login state is not authentication, and the update/delete endpoints do not enforce ownership. Do not deploy publicly with real users or sensitive data until server-side authentication and authorization are added.
